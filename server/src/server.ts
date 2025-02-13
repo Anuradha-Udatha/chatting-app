@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import connectToDb from './db/db';
-import mainRouter from './routes/mainRouter';
+import connectToDb from './db/mongodb';
+import mainRouter from './controllers/mainController';
 dotenv.config();
 
 const app= express();

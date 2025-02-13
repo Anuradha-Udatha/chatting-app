@@ -1,11 +1,11 @@
 import express from "express";
 import { authMiddleware } from "../middlewares/auth";
-import userProfileController from "../controllers/profile";
+import userProfileController from "../services/profile";
 
 const profileRouter = express.Router();
 
 profileRouter.post("/", authMiddleware,userProfileController.createUserProfile);
-profileRouter.get("/:id", authMiddleware,userProfileController.getUserProfile);
-profileRouter.put("/:id", authMiddleware, userProfileController.updateUserProfile);
+profileRouter.get("/", authMiddleware,userProfileController.getUserProfile);
+profileRouter.put("/", authMiddleware, userProfileController.updateUserProfile);
 
 export default profileRouter;

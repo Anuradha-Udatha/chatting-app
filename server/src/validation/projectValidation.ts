@@ -18,8 +18,11 @@ export const projectValidationSchema = z.object({
         .trim()
         .min(1, { message: "Description is required" })
         .max(1000, { message: "Description cannot exceed 1000 characters" }),
-    techStacks: z
+    projectTechStack: z
         .array(z.string().min(1, { message: "Each tech stack must be a non-empty string" }))
+        .min(1, { message: "At least one tech stack is required" }),
+    skillNeeded: z
+        .array(z.string().min(1, { message: "Each skill must be a non-empty string" }))
         .min(1, { message: "At least one tech stack is required" }),
     collaborators: z
         .array(z.string().min(1, { message: "Each collaborator ID must be a valid string" }))
@@ -36,3 +39,5 @@ export const projectValidationSchema = z.object({
 export const validateProject = (data: unknown) => {
     return projectValidationSchema.parse(data);
 };
+
+export const updateUserProjectSchema = projectValidationSchema.partial();

@@ -1,15 +1,13 @@
 import express from "express";
 import {
     createSwipe,
-    getUserSwipes,
-    getLikesForEntity,
-} from "../controllers/swipe";
+    getUserLikedSwipes
+} from "../services/swipe";
 import { authMiddleware } from "../middlewares/auth";
 
 const swipeRouter = express.Router();
 
 swipeRouter.post("/", authMiddleware, createSwipe);
-swipeRouter.get("/", authMiddleware, getUserSwipes);
-//swipeRouter.get("/:swipedOnId/likes", authMiddleware, getLikesForEntity);
+swipeRouter.get("/", authMiddleware, getUserLikedSwipes);
 
 export default swipeRouter;

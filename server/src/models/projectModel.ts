@@ -1,37 +1,46 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 interface ICollaborationRequest {
-    userId: string;
+    userId: mongoose.Schema.Types.ObjectId;  
     status: "pending" | "accepted" | "rejected";
 }
 
 export interface IProject extends Document {
+    name: string;
     title: string;
     description: string;
-    techStacks: string[];
-    ownerId: string;
+    projectTechStack: string[];
+    skillsNeeded: string[];
+    referenceLinks: string[];
+    ownerId: mongoose.Schema.Types.ObjectId;  
     status: "open" | "in-progress" | "completed";
-    collaborators: string[];
     collaborationRequests: ICollaborationRequest[];
+    collaborators: mongoose.Schema.Types.ObjectId[]; 
 }
 
 const projectSchema = new Schema<IProject>({
+    name: { type: String, required: true, trim: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
-    techStacks: { type: [String], required: true, validate: (v: string[]) => v.length > 0 }, 
-    ownerId: { type: String, required: true },
+    projectTechStack: { 
+        type: [String], 
+        required: true, 
+        validate: (v: string[]) => v.length > 0 
+    },
+    skillsNeeded: {
+        type: [String], 
+        required: true, 
+        validate: (v: string[]) => v.length > 0 
+    },
+    ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },  
     status: {
         type: String,
         enum: ["open", "in-progress", "completed"],
         default: "open",
     },
-    collaborators: {
-        type: [String],
-        default: [],
-    },
     collaborationRequests: [
         {
-            userId: { type: String, required: true },
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },  // Correct usage of ObjectId here
             status: {
                 type: String,
                 enum: ["pending", "accepted", "rejected"],
@@ -39,8 +48,11 @@ const projectSchema = new Schema<IProject>({
             },
         },
     ],
-});
-
+    collaborators: {
+        type: [mongoose.Schema.Types.ObjectId],  // Correct usage of ObjectId here
+        default: [],
+    },
+}, { timestamps: true });
 
 const Project = mongoose.model<IProject>("Project", projectSchema);
 

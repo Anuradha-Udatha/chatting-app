@@ -3,24 +3,24 @@ import {
     sendCollaborationRequest,
     respondToCollaborationRequest,
     getCollaborationRequests,
-} from "../controllers/colaborationRequests";
+} from "../services/colaborationRequests";
 import { authMiddleware} from "../middlewares/auth"; 
 
 const collaborationRouter = express.Router({ mergeParams: true });
 collaborationRouter.post(
-    "/",
+    "/:projectId/collaboration-requests",
     authMiddleware,
     sendCollaborationRequest
 );
 collaborationRouter.put(
-    "/",
+    "/:projectId/collaboration-requests",
     authMiddleware,
     respondToCollaborationRequest
 );
-collaborationRouter.get(
-    "/",
-    authMiddleware,
-    getCollaborationRequests
-);
+ collaborationRouter.get(
+     "/collaboration-requests",
+     authMiddleware,
+     getCollaborationRequests
+ );
 
 export default collaborationRouter;
