@@ -21,9 +21,3 @@ export const userProfileSchema = z.object({
     experience: z.array(experienceSchema).optional()
 });
 
-
-export const validateUserProfile = (data: any) => {
-    return userProfileSchema.parse(data);
-};
-
-export const updateUserProfileSchema = userProfileSchema.partial();

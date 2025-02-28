@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Heading from '../components/Heading';
 import Navbar from '../components/Navbar';
@@ -14,7 +14,6 @@ interface Experience {
   title: string;
   description: string;
 }
-
 
 interface Profile {
   firstname: string;
@@ -79,76 +78,75 @@ const Profile: React.FC = () => {
 
           <div
             ref={cardRef}
-            className="bg-white rounded-lg p-6 my-4 shadow-md flex flex-col justify-between h-[80vh]"
+            className="bg-white rounded-lg p-6 my-4 shadow-md flex flex-col justify-between"
           >
+            {loading && <p className="text-center mt-4">Loading profile...</p>}
+            {error && <p className="text-center text-red-500 mt-4">{error}</p>}
 
-          {loading && <p className="text-center mt-4">Loading profile...</p>}
-          {error && <p className="text-center text-red-500 mt-4">{error}</p>}
+            {!loading && !error && profile && (
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold">Name: {profile.firstname} {profile.lastname}</h2>
+                <p className="text-lg mt-1">Email: {profile.email}</p>
+                {profile.bio && <p className="text-lg mt-1">Bio: {profile.bio}</p>}
+                {profile.collegeName && (
+                  <p className="text-lg mt-1">College: {profile.collegeName}</p>
+                )}
+                {profile.skills && (
+                  <p className="text-lg mt-1">
+                    Tech Stacks: {profile.skills.join(', ')}
+                  </p>
+                )}
+                {profile.socialLinks && (
+                  <div className="text-lg mt-1">
+                    <p>Social Links:</p>
+                    {profile.socialLinks.github && (
+                      <a
+                        href={profile.socialLinks.github}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500"
+                      >
+                        GitHub
+                      </a>
+                    )}
+                    {profile.socialLinks.linkedin && (
+                      <a
+                        href={profile.socialLinks.linkedin}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-4 text-blue-500"
+                      >
+                        LinkedIn
+                      </a>
+                    )}
+                  </div>
+                )}
+                {profile.experience && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-semibold">Experience:</h3>
+                    {profile.experience.map((experience, index) => (
+                      <div key={index} className="mt-2">
+                        <p>Company: {experience.companyName}</p>
+                        <p>Role: {experience.title}</p>
+                        <p>Description: {experience.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-          {!loading && !error && profile && (
             <div>
-              <h2 className="text-lg font-semibold">Name: {profile.firstname} {profile.lastname}</h2>
-              <p className="text-lg mt-1">Email: {profile.email}</p>
-              {profile.bio && <p className="text-lg mt-1">Bio: {profile.bio}</p>}
-              {profile.collegeName && (
-                <p className="text-lg mt-1">College: {profile.collegeName}</p>
-              )}
-              {profile.skills && (
-                <p className="text-lg mt-1">
-                  Tech Stacks: {profile.skills.join(', ')}
-                </p>
-              )}
-              {profile.socialLinks && (
-                <div className="text-lg mt-1">
-                  <p>Social Links:</p>
-                  {profile.socialLinks.github && (
-                    <a
-                      href={profile.socialLinks.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500"
-                    >
-                      GitHub
-                    </a>
-                  )}
-                  {profile.socialLinks.linkedin && (
-                    <a
-                      href={profile.socialLinks.linkedin}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-4 text-blue-500"
-                    >
-                      LinkedIn
-                    </a>
-                  )}
-                </div>
-              )}
-              {profile.experience && (
-                <div className="mt-4">
-                  <h3 className="text-lg font-semibold">Experience:</h3>
-                  {profile.experience.map((experience, index) => (
-                    <div key={index} className="mt-2">
-                      <p>Company: {experience.companyName}</p>
-                      <p>Role: {experience.title}</p>
-                      <p>Description: {experience.description}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <button
+                onClick={handleUpdateProfile}
+                className="bg-gray-900 text-white py-2 px-4 rounded hover:bg-gray-700"
+              >
+                Update Profile
+              </button>
             </div>
-          )}
-
-          <div className="mt-4">
-            <button
-              onClick={handleUpdateProfile}
-              className="bg-gray-900 text-white py-2 px-4 rounded hover:bg-gray-700"
-            >
-              Update Profile
-            </button>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

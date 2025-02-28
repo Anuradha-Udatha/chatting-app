@@ -1,79 +1,75 @@
 import { Request, Response } from "express";
 import Project from "../models/projectModel";
-import { validateProject, updateUserProjectSchema } from "../validation/projectValidation";
+import { projectValidationSchema } from "../validation/projectValidation";
 import UserProfile from "../models/profileModel";
 
 export const createProject = async (req: Request, res: Response): Promise<void> => {
     try {
-        const id = req.userId;
-        if (!id) {
+        if (!req.userId) {
             res.status(403).json({ success: false, message: "Unauthorized. Please provide a valid token." });
             return;
         }
-        const user = await UserProfile.findOne({ userId: id });
+        const user = await UserProfile.findOne({ userId: req.userId });
         if (!user) {
             res.status(404).json({ success: false, message: "User not found." });
             return;
         }
-        const validatedData = validateProject(req.body);
-        const name = user.firstname;
-        const projectData = { ...validatedData, name, ownerId: id };
-
+        const validationResult = projectValidationSchema.safeParse(req.body);
+        if (!validationResult.success) {
+            res.status(400).json({ success: false, message: "Validation failed.", errors: validationResult.error.errors });
+            return;
+        }
+        const projectData = {
+            ...validationResult.data,
+            name: user.firstname,
+            ownerId: req.userId,
+        };
         const project = new Project(projectData);
         await project.save();
         res.status(201).json({ success: true, message: "Project created successfully.", data: project });
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(400).json({ success: false, message: "Validation failed.", errors: error.message });
-        } else {
-            res.status(500).json({ success: false, message: "Internal server error." });
-        }
+        res.status(500).json({ success: false, message: "Internal server error." });
     }
 };
 
+
 export const updateProject = async (req: Request, res: Response): Promise<void> => {
     try {
-        const id = req.userId;
-        if (!id) {
+        if (!req.userId) {
             res.status(403).json({ success: false, message: "Unauthorized. Please provide a valid token." });
             return;
         }
-        const user = await UserProfile.findOne({ userId: id });
+        const user = await UserProfile.findOne({ userId: req.userId });
         if (!user) {
             res.status(404).json({ success: false, message: "User not found." });
             return;
         }
         const { projectId } = req.params;
-        const validatedData = updateUserProjectSchema.safeParse(req.body);
-        if (!validatedData.success) {
-            res.status(400).json({ success: false, message: "Validation failed.", errors: validatedData.error.errors });
+        const validationResult = projectValidationSchema.safeParse(req.body);
+        if (!validationResult.success) {
+            res.status(400).json({ success: false, message: "Validation failed.", errors: validationResult.error.errors });
             return;
         }
-
         const project = await Project.findById(projectId);
         if (!project) {
             res.status(404).json({ success: false, message: "Project not found." });
             return;
         }
-        if (project.ownerId.toString() !== id.toString()) {
+        if (project.ownerId.toString() !== req.userId.toString()) {
             res.status(403).json({ success: false, message: "You are not authorized to update this project." });
             return;
         }
-
-        const updatedProject = await Project.findByIdAndUpdate(projectId, validatedData.data, {
-            new: true,
-            runValidators: true,
-        });
-
+        const updatedProject = await Project.findByIdAndUpdate(
+            projectId,
+            validationResult.data,
+            { new: true, runValidators: true }
+        );
         res.status(200).json({ success: true, message: "Project updated successfully.", data: updatedProject });
     } catch (error) {
-        if (error instanceof Error) {
-            res.status(400).json({ success: false, message: "Validation failed.", errors: error.message });
-        } else {
-            res.status(500).json({ success: false, message: "Internal server error." });
-        }
+        res.status(500).json({ success: false, message: "Internal server error." });
     }
 };
+
 
 export const getAllProjects = async (req: Request, res: Response): Promise<void> => {
     try {

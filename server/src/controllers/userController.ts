@@ -1,8 +1,9 @@
 import express from "express";
-import { googleSignup } from "../services/user";
+import { googleSignin, googleSignup } from "../services/user";
 
 const authRouter = express.Router();
 
-authRouter.post("/google-auth",googleSignup);
+authRouter.post("/google-signup",googleSignup);
+authRouter.post("/google-signin",googleSignin)
 
 export default authRouter;
