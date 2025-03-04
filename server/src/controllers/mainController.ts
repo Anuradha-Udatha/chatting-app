@@ -6,7 +6,6 @@ import feedRouter from "./feedController";
 import profileRouter from "./profileController";
 import collaborationRouter from "./collaborationrequestsController";
 import bookmarksRouter from "./bookmarkController";
-import imageRouter from "./s3Controller";
 
 
 const mainRouter = express.Router();
@@ -18,7 +17,6 @@ mainRouter.use("/swipe",swipeRouter);
 mainRouter.use("/feed",feedRouter);
 mainRouter.use("/project",collaborationRouter)
 mainRouter.use("/bookmarks",bookmarksRouter);
-mainRouter.use("/projects",imageRouter)
 
 
 export default mainRouter;

@@ -46,7 +46,6 @@ export const createSwipe = async (req: Request, res: Response): Promise<void> =>
     }
 };
 
-
 export const getUserLikedSwipes = async (req: Request, res: Response): Promise<void> => {
     try {
         const userId = req.userId;
@@ -56,8 +55,12 @@ export const getUserLikedSwipes = async (req: Request, res: Response): Promise<v
             return;
         }
 
+        // Fetch liked swipes and populate the related project details
         const likedSwipes = await Swipe.find({ userId, action: 'like' })
-            .populate("projectId") 
+            .populate({
+                path: "projectId",
+                select: "title description projectTechStack name status ownerId skillsNeeded referenceLinks images"
+            })
             .exec();
 
         const projects = likedSwipes.map((swipe) => swipe.projectId);
@@ -68,6 +71,7 @@ export const getUserLikedSwipes = async (req: Request, res: Response): Promise<v
             data: projects
         });
     } catch (error) {
+        console.error("Error fetching liked swipes:", error);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };

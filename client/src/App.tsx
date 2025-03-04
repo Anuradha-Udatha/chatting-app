@@ -13,6 +13,8 @@ import CollaborationRequests from "./pages/Collaborationrequests";
 import Updateproject from "./pages/Updateproject";
 import UpdateUserProfile from "./pages/Updateprofile";
 import Logout from "./components/Logout";
+import HomePage from "./pages/HomePage";
+import ChatPage from "./pages/ChatPage";
 import './App.css';
 
 
@@ -35,6 +37,8 @@ function App() {
         <Route path="/collaboration-requests" element={<CollaborationRequests />} />
         <Route path="/updateproject/:projectId" element={<Updateproject />} />
         <Route path="/updateprofile" element={<UpdateUserProfile />} />
+        <Route path="/chat" element={<HomePage />} />
+        <Route path="/chat/:userId" element={<ChatPage />} />
         <Route path="/logout" element={<Logout />} />
       </Routes>
       </BrowserRouter> 

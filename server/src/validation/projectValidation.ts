@@ -22,7 +22,7 @@ export const projectValidationSchema = z.object({
     skillsNeeded: z
         .array(z.string().min(1, { message: "Each skill must be a non-empty string" }))
         .min(1, { message: "At least one skill is required" }),
-    referenceSkills: z // Added referenceSkills validation
+    referenceLinks: z // Added referenceSkills validation
         .array(z.string().min(1, { message: "Each reference skill must be a non-empty string" }))
         .optional(),
     images: z

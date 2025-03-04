@@ -144,3 +144,71 @@ export const getCollaborationRequests = async (req: Request, res: Response): Pro
         res.status(500).json({ success: false, message: "Internal server error.", error: error instanceof Error ? error.message : undefined });
     }
 };
+
+
+export const getCollaborators = async (req: Request, res: Response) => {
+    try {
+        if (!req.userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized: User is not authenticated." });
+        }
+
+        // Fetch projects where user is owner or collaborator
+        const projects = await Project.find({
+            $or: [{ ownerId: req.userId }, { collaborators: req.userId }],
+        })
+
+        if (!projects || projects.length === 0) {
+            return res.status(404).json({ success: false, message: "No projects found." });
+        }
+        interface ChatUser { userId: mongoose.Schema.Types.ObjectId; name: string; role: 'owner' | 'collaborator'; }
+        const uniqueUsers: Map<mongoose.Schema.Types.ObjectId, ChatUser> = new Map();
+
+        for (const project of projects) {
+            // If the logged-in user is the owner, add all collaborators
+            if (req.userId == project.ownerId) {
+                const collaboratorIds = project.collaborators.filter(collabId => collabId !== req.userId);
+
+                if (collaboratorIds.length > 0) {
+                    const collaborators = await UserProfile.find({
+                        userId: { $in: collaboratorIds }
+                    }).select("userId firstname");
+
+                    collaborators.forEach(collab => {
+                        uniqueUsers.set(collab.userId, {
+                            userId: collab.userId,
+                            name: collab.firstname || 'Unknown Collaborator',
+                            role: 'collaborator',
+                        });
+                    });
+                }
+            } else {
+                // If the logged-in user is a collaborator, add the owner
+                if (project.ownerId !== req.userId) {
+                    uniqueUsers.set(project.ownerId, {
+                        userId: project.ownerId,
+                        name: project.name,
+                        role: 'owner'
+                    });
+                }
+            }
+        }
+
+        const chatUsers = Array.from(uniqueUsers.values());
+
+        if (chatUsers.length === 0) {
+            return res.status(404).json({ success: false, message: "No valid chat users found." });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            data: chatUsers 
+        });
+    } catch (error) {
+        console.error("Error in getCollaborators:", error);
+        res.status(500).json({ 
+            success: false, 
+            message: "Internal server error.", 
+            error: error instanceof Error ? error.message : undefined 
+        });
+    }
+};

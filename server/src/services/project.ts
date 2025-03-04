@@ -2,75 +2,240 @@ import { Request, Response } from "express";
 import Project from "../models/projectModel";
 import { projectValidationSchema } from "../validation/projectValidation";
 import UserProfile from "../models/profileModel";
+import s3 from "../config/s3config";
+import multer from "multer";
 
-export const createProject = async (req: Request, res: Response): Promise<void> => {
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 5 * 1024 * 1024, // 5MB file size limit
+    },
+    fileFilter: (req, file, callback) => {
+      // Accept only images
+      if (file.mimetype.startsWith('image/')) {
+        callback(null, true);
+      } else {
+        callback(new Error('Only image files are allowed'));
+      }
+    },
+  });
+  
+  // Middleware for handling multiple file uploads
+  export const uploadMiddleware = upload.array('images');
+  
+  export const createProject = async (req: Request, res: Response): Promise<void> => {
     try {
-        if (!req.userId) {
-            res.status(403).json({ success: false, message: "Unauthorized. Please provide a valid token." });
-            return;
+      if (!req.userId) {
+        res.status(403).json({ success: false, message: "Unauthorized. Please provide a valid token." });
+        return;
+      }
+      const user = await UserProfile.findOne({ userId: req.userId });
+      if (!user) {
+          res.status(404).json({ success: false, message: "User not found." });
+          return;
+      }
+      // Parse request body data
+      const projectData = {
+        name: user.firstname,
+        ownerId: req.userId,
+        title: req.body.title,
+        description: req.body.description,
+        projectTechStack: Array.isArray(req.body.projectTechStack) 
+          ? req.body.projectTechStack 
+          : [req.body.projectTechStack].filter(Boolean),
+        skillsNeeded: Array.isArray(req.body.skillsNeeded) 
+          ? req.body.skillsNeeded 
+          : [req.body.skillsNeeded].filter(Boolean),
+        status: req.body.status,
+        referenceLinks: Array.isArray(req.body.referenceLinks) 
+          ? req.body.referenceLinks 
+          : [req.body.referenceLinks].filter(Boolean),
+      };
+      // Validate project data
+      const validationResult = projectValidationSchema.safeParse(projectData);
+      if (!validationResult.success) {
+        res.status(400).json({ 
+          success: false, 
+          message: "Validation failed.", 
+          errors: validationResult.error.errors 
+        });
+        return;
+      }
+  
+      // Handle image uploads if present
+      const imageUrls: string[] = [];
+      if (req.files && Array.isArray(req.files)) {
+        try {
+          const uploadPromises = (req.files as Express.Multer.File[]).map(async (file) => {
+            const fileKey = `projects/${req.userId}/${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+            
+            const params = {
+              Bucket: process.env.S3_BUCKET_NAME!,
+              Key: fileKey,
+              Body: file.buffer,
+              ContentType: file.mimetype,             
+            };
+            
+            const s3Response = await s3.upload(params).promise();
+            return s3Response.Location;
+          });
+  
+          const uploadedImages = await Promise.all(uploadPromises);
+          imageUrls.push(...uploadedImages);
+        } catch (uploadError) {
+          console.error("Error uploading images to S3:", uploadError);
+          res.status(500).json({ success: false, message: "Failed to upload images to S3." });
+          return;
         }
-        const user = await UserProfile.findOne({ userId: req.userId });
-        if (!user) {
-            res.status(404).json({ success: false, message: "User not found." });
-            return;
-        }
-        const validationResult = projectValidationSchema.safeParse(req.body);
-        if (!validationResult.success) {
-            res.status(400).json({ success: false, message: "Validation failed.", errors: validationResult.error.errors });
-            return;
-        }
-        const projectData = {
-            ...validationResult.data,
-            name: user.firstname,
-            ownerId: req.userId,
-        };
-        const project = new Project(projectData);
-        await project.save();
-        res.status(201).json({ success: true, message: "Project created successfully.", data: project });
+      }
+      const project = new Project({
+        name: user.firstname, 
+        title: validationResult.data.title,
+        description: validationResult.data.description,
+        projectTechStack: validationResult.data.projectTechStack,
+        skillsNeeded: validationResult.data.skillsNeeded,
+        status: validationResult.data.status,
+        ownerId: req.userId,
+        images: imageUrls,
+        referenceLinks: validationResult.data.referenceLinks || [],
+      });
+      await project.save();
+      res.status(201).json({ 
+        success: true, 
+        message: "Project created successfully.", 
+        data: project 
+      }); 
     } catch (error) {
-        res.status(500).json({ success: false, message: "Internal server error." });
+      console.error("Error creating project:", error);
+      res.status(500).json({ success: false, message: "Internal server error." });
     }
-};
+  };
 
 
-export const updateProject = async (req: Request, res: Response): Promise<void> => {
+  export const updateProject = async (req: Request, res: Response): Promise<void> => {
     try {
         if (!req.userId) {
             res.status(403).json({ success: false, message: "Unauthorized. Please provide a valid token." });
             return;
         }
+        
         const user = await UserProfile.findOne({ userId: req.userId });
         if (!user) {
             res.status(404).json({ success: false, message: "User not found." });
             return;
         }
+        
         const { projectId } = req.params;
-        const validationResult = projectValidationSchema.safeParse(req.body);
-        if (!validationResult.success) {
-            res.status(400).json({ success: false, message: "Validation failed.", errors: validationResult.error.errors });
-            return;
-        }
+        
+        // Find the existing project
         const project = await Project.findById(projectId);
         if (!project) {
             res.status(404).json({ success: false, message: "Project not found." });
             return;
         }
+        
         if (project.ownerId.toString() !== req.userId.toString()) {
             res.status(403).json({ success: false, message: "You are not authorized to update this project." });
             return;
         }
+        
+        // Parse request body data
+        const projectData = {
+            name: user.firstname,
+            ownerId: req.userId,
+            title: req.body.title,
+            description: req.body.description,
+            projectTechStack: Array.isArray(req.body.projectTechStack) 
+                ? req.body.projectTechStack 
+                : [req.body.projectTechStack].filter(Boolean),
+            skillsNeeded: Array.isArray(req.body.skillsNeeded) 
+                ? req.body.skillsNeeded 
+                : [req.body.skillsNeeded].filter(Boolean),
+            status: req.body.status,
+            referenceLinks: Array.isArray(req.body.referenceLinks) 
+                ? req.body.referenceLinks 
+                : [req.body.referenceLinks].filter(Boolean),
+        };
+        
+        // Validate project data
+        const validationResult = projectValidationSchema.safeParse(projectData);
+        if (!validationResult.success) {
+            res.status(400).json({ 
+                success: false, 
+                message: "Validation failed.", 
+                errors: validationResult.error.errors 
+            });
+            return;
+        }
+        
+        // Image handling: Use the existingImages from form data
+        // This will contain only the images the user kept (didn't delete in the UI)
+        let imageUrls: string[] = []; 
+        
+        // Get the existing images the user kept
+        if (req.body.existingImages) {
+            if (Array.isArray(req.body.existingImages)) {
+                imageUrls = req.body.existingImages;
+            } else {
+                // If only one image, it might come as a string
+                imageUrls = [req.body.existingImages];
+            }
+        }
+        
+        // Add new image uploads if present
+        if (req.files && Array.isArray(req.files)) {
+            try {
+                const uploadPromises = (req.files as Express.Multer.File[]).map(async (file) => {
+                    const fileKey = `projects/${req.userId}/${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
+                    
+                    const params = {
+                        Bucket: process.env.S3_BUCKET_NAME!,
+                        Key: fileKey,
+                        Body: file.buffer,
+                        ContentType: file.mimetype,             
+                    };
+                    
+                    const s3Response = await s3.upload(params).promise();
+                    return s3Response.Location;
+                });
+                
+                const uploadedImages = await Promise.all(uploadPromises);
+                imageUrls.push(...uploadedImages);
+            } catch (uploadError) {
+                console.error("Error uploading images to S3:", uploadError);
+                res.status(500).json({ success: false, message: "Failed to upload images to S3." });
+                return;
+            }
+        }
+        
+        // Prepare update data
+        const updateData = {
+            name: user.firstname,
+            title: validationResult.data.title,
+            description: validationResult.data.description,
+            projectTechStack: validationResult.data.projectTechStack,
+            skillsNeeded: validationResult.data.skillsNeeded,
+            status: validationResult.data.status,
+            images: imageUrls,
+            referenceLinks: validationResult.data.referenceLinks || [],
+        };
+        
+        // Update the project
         const updatedProject = await Project.findByIdAndUpdate(
             projectId,
-            validationResult.data,
+            updateData,
             { new: true, runValidators: true }
         );
-        res.status(200).json({ success: true, message: "Project updated successfully.", data: updatedProject });
+        res.status(200).json({ 
+            success: true, 
+            message: "Project updated successfully.", 
+            data: updatedProject 
+        });
     } catch (error) {
+        console.error("Error updating project:", error);
         res.status(500).json({ success: false, message: "Internal server error." });
     }
 };
-
-
 export const getAllProjects = async (req: Request, res: Response): Promise<void> => {
     try {
         const id = req.userId;

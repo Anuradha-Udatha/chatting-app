@@ -89,7 +89,7 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          <NavItem onClick={() => navigate('/messaging')} icon={<FaEnvelope />} label="Messaging" />
+          <NavItem onClick={() => navigate('/chat')} icon={<FaEnvelope />} label="Messaging" />
           <NavItem
             onClick={() => {
               console.log('Logging out...');

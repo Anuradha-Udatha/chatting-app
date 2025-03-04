@@ -68,13 +68,14 @@ const UpdateUserProfile: React.FC = () => {
         );
 
         const data = response.data.data;
+        console.log(data);
         setFirstName(data.firstname || "");
         setLastName(data.lastname || "");
         setBio(data.bio || "");
         setSocialLinks(data.socialLinks || {});
         
         // Convert the existing skills into the select format
-        const userSkills = data.techStacks || [];
+        const userSkills = data.skills || [];
         const formattedSelectedSkills = userSkills.map((skill: string) => ({
           value: skill,
           label: skill
@@ -340,8 +341,8 @@ const UpdateUserProfile: React.FC = () => {
                   }}
                 />
                 <Inputbox
-                  label="Title"
-                  placeholder="Enter Title"
+                  label="Which Profile did you work in?"
+                  placeholder="Enter Profile Name"
                   value={exp.title}
                   onChange={(e) => {
                     const value = e.target.value;

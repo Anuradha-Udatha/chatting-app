@@ -290,8 +290,8 @@ const Createuserprofile: React.FC = () => {
                   }}
                 />
                 <Inputbox
-                  label="Title"
-                  placeholder="Enter Title"
+                  label="Which Profile did you work in?"
+                  placeholder="Enter Profile Name"
                   value={exp.title}
                   onChange={(e) => {
                     const value = e.target.value;

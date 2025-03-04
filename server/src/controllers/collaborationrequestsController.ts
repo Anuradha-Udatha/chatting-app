@@ -3,6 +3,7 @@ import {
     sendCollaborationRequest,
     respondToCollaborationRequest,
     getCollaborationRequests,
+    getCollaborators,
 } from "../services/colaborationRequests";
 import { authMiddleware} from "../middlewares/auth"; 
 
@@ -22,5 +23,11 @@ collaborationRouter.put(
      authMiddleware,
      getCollaborationRequests
  );
+
+ collaborationRouter.get(
+    "/collaborators",
+    authMiddleware,
+    getCollaborators
+);
 
 export default collaborationRouter;

@@ -7,9 +7,13 @@ interface Project {
   _id: string;
   title: string;
   description: string;
-  techStacks: string[];
+  projectTechStack: string[];
   name: string;
   status: 'open' | 'in-progress' | 'completed';
+  ownerId: string;
+  skillsNeeded: string[];
+  referenceLinks: string[];
+  images: string[];
 }
 
 const LikedProjects: React.FC = () => {
@@ -33,13 +37,12 @@ const LikedProjects: React.FC = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
 
-        // Check if the response data is an array
-        if (Array.isArray(response.data)) {
-          setLikedProjects(response.data);
+        if (response.data.success && Array.isArray(response.data.data)) {
+          setLikedProjects(response.data.data);
         } else {
           setError('Invalid response format.');
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching liked projects:', err);
         setError('Failed to fetch liked projects. Please try again later.');
       } finally {
@@ -70,7 +73,7 @@ const LikedProjects: React.FC = () => {
                   Description: {project.description || 'No description available'}
                 </p>
                 <p className="text-lg font-medium mt-1">
-                  Tech Stack: {Array.isArray(project.techStacks) ? project.techStacks.join(', ') : 'No tech stacks available'}
+                  Tech Stack: {project.projectTechStack?.join(', ') || 'No tech stacks available'}
                 </p>
                 <p className="text-lg mt-1">
                   Owner: <span className="font-semibold">{project.name || 'No owner available'}</span>
@@ -78,6 +81,41 @@ const LikedProjects: React.FC = () => {
                 <p className="text-lg mt-1">
                   Status: <span className="text-blue-500">{project.status || 'No status available'}</span>
                 </p>
+
+                {/* Display Skills Needed */}
+                {project.skillsNeeded.length > 0 && (
+                  <p className="text-lg font-medium mt-1">
+                    Skills Needed: {project.skillsNeeded.join(', ')}
+                  </p>
+                )}
+
+                {/* Display Reference Links */}
+                {project.referenceLinks.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-lg font-medium">Reference Links:</p>
+                    <ul className="list-disc list-inside">
+                      {project.referenceLinks.map((link, index) => (
+                        <li key={index}>
+                          <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                            {link}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Display Images */}
+                {project.images.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-lg font-medium">Project Images:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {project.images.map((image, index) => (
+                        <img key={index} src={image} alt={`Project ${index}`} className="w-32 h-32 object-cover rounded-md" />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           ) : (

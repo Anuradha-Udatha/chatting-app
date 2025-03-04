@@ -43,14 +43,14 @@ const CollaborationRequests: React.FC = () => {
 
         setLoading(true);
 
-        const response = await axios.get<CollaborationRequest[]>(
+        const response = await axios.get<{ success: boolean; message: string; data: CollaborationRequest[] }>(
           'http://localhost:3000/api/v1/project/collaboration-requests',
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
 
-        setRequests(response.data);
+        setRequests(response.data.data || []);
       } catch (err) {
         console.error('Error fetching collaboration requests:', err);
         setError('Failed to load requests. Please try again later.');

@@ -18,58 +18,24 @@ export const getUserFeed = async (req: Request, res: Response): Promise<void> =>
     }
 
     const userTechStack = user.skills || []; 
-    const swipes = await Swipe.find({ userId });
-    const dislikedProjectIds = swipes
-      .filter((swipe) => swipe.action === 'dislike')
-      .map((swipe) => swipe.projectId);
 
+    // Fetch user's swipe history
+    const swipes = await Swipe.find({ userId });
+
+    // Exclude projects that were liked or disliked
+    const swipedProjectIds = swipes.map((swipe) => swipe.projectId);
+
+    // Fetch projects excluding already swiped ones and user's own projects
     const projects = await Project.find({
-      _id: { $nin: dislikedProjectIds }, 
-      ownerId: { $ne: userId }, 
+      _id: { $nin: swipedProjectIds }, 
+      ownerId: { $ne: userId },
+      skillsNeeded: { $in: userTechStack } 
     }).lean();
 
     if (projects.length === 0) {
-      res.status(204).json({
-        success: false,
-        message: "No projects available.",
-        suggestions: [
-          "Try broadening your tech stack",
-          "Check back later for new projects",
-          "Consider creating your own project"
-        ]
-      });
-      return;
-    }
-
-    // Fetch owner details for all projects
-    const projectsWithOwners = await Promise.all(
-      projects.map(async (project) => {
-        const owner = await UserProfile.findOne({ userId: project.ownerId })
-          .select('-firstname -lastname')
-          .lean();
-        
-        return {
-          ...project,
-          ownerDetails: owner ? {
-            bio: owner.bio,
-            socialLinks: owner.socialLinks,
-            skills: owner.skills,
-            collegeName: owner.collegeName,
-            experience: owner.experience, 
-          } : null
-        };
-      })
-    );
-
-    // Filter projects based on tech stack
-    const filteredProjects = projectsWithOwners.filter((project) =>
-      project.skillsNeeded.some((tech: string) => userTechStack.includes(tech))
-    );
-
-    if (filteredProjects.length === 0) {
       res.status(404).json({
         success: false,
-        message: "No projects match your skills.",
+        message: "No new projects available for you.",
         recommendations: [
           "Expand your skill set",
           "Adjust your profile skills",
@@ -82,8 +48,8 @@ export const getUserFeed = async (req: Request, res: Response): Promise<void> =>
     res.status(200).json({
       success: true,
       message: "Projects fetched successfully!",
-      projectCount: filteredProjects.length,
-      projects: filteredProjects
+      projectCount: projects.length,
+      projects
     });
   } catch (error) {
     console.error("Error fetching feed:", error);

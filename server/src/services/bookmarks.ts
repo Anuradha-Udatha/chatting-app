@@ -72,12 +72,15 @@ export const getBookmarks = async (req: Request, res: Response): Promise<void> =
       res.status(403).json({ success: false, message: "Unauthorized. Please provide a valid token." });
       return;
     }
+
     const user = await UserProfile.findOne({ userId });
     if (!user) {
       res.status(404).json({ success: false, message: "User not found." });
       return;
     }
+
     const bookmarks = await Bookmark.find({ userId }).populate<{ projectId: typeof Project.prototype }>("projectId");
+
     const projects = bookmarks
       .filter((bookmark) => bookmark.projectId && bookmark.projectId instanceof Types.ObjectId === false)
       .map((bookmark) => {
@@ -86,9 +89,12 @@ export const getBookmarks = async (req: Request, res: Response): Promise<void> =
           _id: project._id,
           title: project.title,
           description: project.description,
-          techStacks: project.techStacks,
+          projectTechStack: project.projectTechStack, // Ensure this matches your schema
           name: project.name,
           status: project.status,
+          skillsNeeded: project.skillsNeeded, // Add this field
+          referenceLinks: project.referenceLinks, // Add this field
+          images: project.images, // Add this field
         };
       });
 
