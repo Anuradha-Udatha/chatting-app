@@ -61,37 +61,87 @@ const AllProjects: React.FC = () => {
 
   const fetchLikes = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (!token) {
-        setError('Session Expired. Please log in again.');
+        console.error("No token found in localStorage.");
+        setError("Session Expired. Please log in again.");
         return;
       }
-
-      const response = await axios.get('http://localhost:3000/api/v1/swipe', {
+      const response = await axios.get("http://localhost:3000/api/v1/swipe", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      console.log('Liked Projects Response:', response.data); // Log the response
-
-      // Access the `data` field from the response
-      const likedProjectsData = response.data.data;
-
-      // Check if likedProjectsData is an array
-      if (Array.isArray(likedProjectsData)) {
-        const likedProjectIds = likedProjectsData.map(
-          (like: { projectId: string }) => like.projectId
-        );
-        setLikedProjects(new Set(likedProjectIds));
-      } else {
-        console.error('Expected an array but got:', likedProjectsData);
-        setError('Invalid data format for liked projects.');
+  
+      if (!response || !response.data) {
+        console.error("Unexpected response format:", response);
+        setError("Invalid response format. Please try again.");
+        return;
       }
+      const likedProjectsData = response.data.data;
+  
+      if (!Array.isArray(likedProjectsData)) {
+        console.error("Expected an array but got:", likedProjectsData);
+        setError("Invalid data format for liked projects.");
+        return;
+      }  
+      const likedProjectIds = likedProjectsData
+        .filter((like) => like && like._id) // Use `_id`
+        .map((like) => {
+          return like._id; // Use `_id` instead of projectId
+        });
+  
+      if (likedProjectIds.length === 0) {
+        console.warn("No valid project IDs found in response.");
+        setError("No liked projects found.");
+        return;
+      }
+  
+      setLikedProjects(new Set(likedProjectIds));
     } catch (err: any) {
-      console.error('Error fetching liked projects:', err);
-      setError('Failed to fetch liked projects. Please try again later.');
+      console.error("Error fetching liked projects:", err);
+      setError("Failed to fetch liked projects. Please try again later.");
     }
   };
 
+  const fetchDislikes = async () => {
+    try {
+      const token = localStorage.getItem("token");
+  
+      if (!token) {
+        setError("Session Expired. Please log in again.");
+        return;
+      }
+  
+      const response = await axios.get("http://localhost:3000/api/v1/swipe", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+  
+      if (!response || !response.data) {
+        setError("Invalid response format. Please try again.");
+        return;
+      }
+  
+      const dislikedProjectsData = response.data.data;
+  
+      if (!Array.isArray(dislikedProjectsData)) {
+        setError("Invalid data format for disliked projects.");
+        return;
+      }
+  
+      const dislikedProjectIds = dislikedProjectsData
+        .filter((dislike) => dislike && dislike._id)
+        .map((dislike) => dislike._id);
+  
+      if (dislikedProjectIds.length === 0) {
+        setError("No disliked projects found.");
+        return;
+      }
+  
+      setDislikedProjects(new Set(dislikedProjectIds));
+    } catch (err: any) {
+      setError("Failed to fetch disliked projects. Please try again later.");
+    }
+  };  
+  
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -107,8 +157,6 @@ const AllProjects: React.FC = () => {
         const response = await axios.get('http://localhost:3000/api/v1/projects', {
           headers: { Authorization: `Bearer ${token}` },
         });
-
-        console.log('Projects Response:', response.data); // Log the projects response
 
         // Ensure the response has the expected structure
         if (response.data && Array.isArray(response.data.data)) {
@@ -129,6 +177,7 @@ const AllProjects: React.FC = () => {
     fetchProjects();
     fetchBookmarks();
     fetchLikes();
+    fetchDislikes();
   }, []);
 
   const handleBookmarkToggle = async (projectId: string) => {
@@ -421,11 +470,11 @@ const AllProjects: React.FC = () => {
                     <button
                       onClick={() => handleDislike(project._id)}
                       className={`w-12 h-12 rounded-full flex justify-center items-center transition-all ${
-                        likedProjects.has(project._id) || dislikedProjects.has(project._id)
+                        dislikedProjects.has(project._id)
                           ? 'bg-gray-300 cursor-not-allowed'
                           : 'bg-red-500 hover:bg-red-600'
                       }`}
-                      disabled={likedProjects.has(project._id) || dislikedProjects.has(project._id)}
+                      disabled={dislikedProjects.has(project._id) || likedProjects.has(project._id)}
                     >
                       <FaThumbsDown className="text-xl text-white" />
                     </button>
@@ -446,7 +495,7 @@ const AllProjects: React.FC = () => {
                     <button
                       onClick={() => handleLike(project._id)}
                       className={`w-12 h-12 rounded-full flex justify-center items-center transition-all ${
-                        likedProjects.has(project._id) || dislikedProjects.has(project._id)
+                        likedProjects.has(project._id)
                           ? 'bg-blue-300 cursor-not-allowed'
                           : 'bg-blue-500 hover:bg-blue-600'
                       }`}
